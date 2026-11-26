@@ -80,8 +80,7 @@ fun IntroScreen(onDone: () -> Unit) {
                 },
                 contentAlignment = Alignment.Center) { Logo(150.dp) }
             Column(Modifier.graphicsLayer { alpha = words.value; translationY = 16f * (1 - words.value) }, horizontalAlignment = Alignment.CenterHorizontally) {
-                Brand.word?.let { Image(it, "stream goat", Modifier.width(230.dp), colorFilter = ColorFilter.tint(Color.White)) }
-                    ?: Text("MOVFLY", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold)
+                Text("MOVFLY", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
                 Text("Created by TAQI ADIL", color = Color.White.copy(alpha = 0.75f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 10.dp))
             }
