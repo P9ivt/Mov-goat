@@ -588,9 +588,9 @@ private fun AboutSection() {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
         Logo(48.dp)
         Column(Modifier.padding(start = 12.dp)) {
-            Text("Stream Goat", style = MaterialTheme.typography.headlineSmall)
+            Text("MOVFLY", style = MaterialTheme.typography.headlineSmall)
             Text("Version ${versionName ?: "?"}", style = MaterialTheme.typography.bodySmall)
-            Text("Created by Syed Ali Hamza", style = MaterialTheme.typography.bodyMedium, color = Palette.accent)
+            Text("Created by TAQI ADIL", style = MaterialTheme.typography.bodyMedium, color = Palette.accent)
         }
     }
     PillButton("Source code on GitHub", null, primary = false, compact = true) {
