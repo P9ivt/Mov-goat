@@ -22,7 +22,7 @@
         android:allowBackup="true"
         android:banner="@drawable/tv_banner"
         android:icon="@mipmap/ic_launcher"
-        android:label="MOFLVFLY"
+        android:label="MOVFLY"
         android:largeHeap="true"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
