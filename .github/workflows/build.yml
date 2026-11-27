@@ -11,7 +11,7 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '17'  # ✅ تم التغيير من 21 إلى 17
+          java-version: '21'  # ✅ نرجع إلى 21 (paparazzi يحتاجه)
           distribution: 'temurin'
 
       - uses: actions/setup-python@v5
@@ -108,15 +108,36 @@ jobs:
             exit 1
           fi
           echo "✅ Upstream sources fetched successfully"
-          ls -la upstream/cloudstream/library/src
-          ls -la upstream/nicehttp/library/src
+
+      # ✅✅✅ الخطوة الجديدة: إصلاح مشكلة NewPipeExtractor مع Java 21 ✅✅✅
+      - name: Fix NewPipeExtractor dexing for Java 21
+        working-directory: android
+        run: |
+          # إضافة dexOptions لحل مشكلة NewPipeExtractor مع Java 21
+          if ! grep -q "dexOptions" app/build.gradle.kts; then
+            echo "" >> app/build.gradle.kts
+            echo "// Fix for NewPipeExtractor dexing with Java 21" >> app/build.gradle.kts
+            echo "android {" >> app/build.gradle.kts
+            echo "    dexOptions {" >> app/build.gradle.kts
+            echo "        jumboMode = true" >> app/build.gradle.kts
+            echo "        javaMaxHeapSize = \"4g\"" >> app/build.gradle.kts
+            echo "        preDexLibraries = false" >> app/build.gradle.kts
+            echo "    }" >> app/build.gradle.kts
+            echo "}" >> app/build.gradle.kts
+            echo "✅ Added dexOptions to app/build.gradle.kts"
+          else
+            echo "⚠️ dexOptions already exists"
+          fi
+          
+          # مسح cache القديم
+          rm -rf ~/.gradle/caches/modules-2/files-2.1/com.github.teamnewpipe/
 
       - name: Build debug APK
         working-directory: android
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew assembleDebug --console=plain > build.log 2>&1
+          ./gradlew assembleDebug --console=plain --no-daemon > build.log 2>&1
           code=$?
           echo "Gradle exit code: $code (log lines: $(wc -l < build.log))"
           if [ $code -ne 0 ]; then
