@@ -13,6 +13,8 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'gradle'
+          cache-dependency-path: 'android/**/*.gradle*'
 
       - uses: actions/setup-python@v5
         with:
@@ -96,18 +98,19 @@ jobs:
           print('Icon files generated under', base)
           PY
 
-      # --- تمت إضافة هذه الخطوة لحل المشكلة ---
       - name: Fetch upstream sources
         run: |
           chmod +x scripts/fetch-upstream.sh
           ./scripts/fetch-upstream.sh
-      # ----------------------------------------
 
       - name: Build debug APK
         working-directory: android
+        env:
+          _JAVA_OPTIONS: "-Dcom.android.tools.r8.disableKotlinMetadata=true"
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx2g"
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew clean assembleDebug --no-build-cache --rerun-tasks --stacktrace
 
       - name: List APK files
         run: find android -path '*outputs/apk/debug/*.apk'
