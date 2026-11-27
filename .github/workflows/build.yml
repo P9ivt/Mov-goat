@@ -41,7 +41,6 @@ jobs:
 
           base = 'android/app/src/debug/res'
 
-          # Adaptive foreground: 432x432 canvas, logo fills the 288px visible window
           vis = src.resize((288, 288), Image.LANCZOS)
           canvas = Image.new('RGB', (432, 432))
           canvas.paste(vis, (72, 72))
@@ -59,7 +58,6 @@ jobs:
           os.makedirs(base + '/drawable-nodpi', exist_ok=True)
           fg.save(base + '/drawable-nodpi/movgoat_icon_fg.png')
 
-          # Legacy icons (older Android): rounded square and circle
           def shaped(size, kind):
               big = size * 4
               img = src.resize((big, big), Image.LANCZOS).convert('RGBA')
@@ -78,7 +76,6 @@ jobs:
               shaped(px, 'square').save(d + '/ic_launcher.png')
               shaped(px, 'round').save(d + '/ic_launcher_round.png')
 
-          # Adaptive icon definitions (v26 and v33)
           xml = (
               '<?xml version="1.0" encoding="utf-8"?>\n'
               '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
@@ -96,11 +93,23 @@ jobs:
           print('Icon files generated under', base)
           PY
 
-      # ✅✅✅ الخطوة المضافة - جلب كود Cloudstream الأصلي ✅✅✅
       - name: Fetch upstream Cloudstream source
         run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
           chmod +x scripts/fetch-upstream.sh
           ./scripts/fetch-upstream.sh
+          if [ ! -d "upstream/cloudstream/library/src" ]; then
+            echo "❌ Failed to fetch upstream/cloudstream"
+            exit 1
+          fi
+          if [ ! -d "upstream/nicehttp/library/src" ]; then
+            echo "❌ Failed to fetch upstream/nicehttp"
+            exit 1
+          fi
+          echo "✅ Upstream sources fetched successfully"
+          ls -la upstream/cloudstream/library/src
+          ls -la upstream/nicehttp/library/src
 
       - name: Build debug APK
         working-directory: android
