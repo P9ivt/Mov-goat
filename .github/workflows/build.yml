@@ -96,6 +96,13 @@ jobs:
           print('Icon files generated under', base)
           PY
 
+      # --- تمت إضافة هذه الخطوة لحل المشكلة ---
+      - name: Fetch upstream sources
+        run: |
+          chmod +x scripts/fetch-upstream.sh
+          ./scripts/fetch-upstream.sh
+      # ----------------------------------------
+
       - name: Build debug APK
         working-directory: android
         run: |
