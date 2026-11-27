@@ -1,20 +1,22 @@
-      - name: Build debug APK
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          set +e
-          ./gradlew assembleDebug --console=plain > build.log 2>&1
-          code=$?
-          echo "Gradle exit code: $code (log lines: $(wc -l < build.log))"
-          if [ $code -ne 0 ]; then
-            echo "=== FAILED TASKS ==="
-            grep -n "FAILED" build.log | head -20
-            echo "=== WHAT WENT WRONG ==="
-            grep -n -A15 "What went wrong" build.log | head -80
-            echo "=== LAST 40 LINES ==="
-            tail -40 build.log
-            exit $code
-          fi
+name: Build MOV goat APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Generate app icon from the logo image
         run: |
@@ -94,58 +96,23 @@
           print('Icon files generated under', base)
           PY
 
-      - name: Fetch upstream sources
-        run: |
-          chmod +x scripts/fetch-upstream.sh
-          ./scripts/fetch-upstream.sh
-
-      - name: Align AGP & Kotlin versions in android build files
-        run: |
-          python - <<'PY'
-          import glob, re
-
-          # Update common AGP / Kotlin version declarations if present
-          for path in glob.glob('android/**/*.gradle*', recursive=True) + glob.glob('android/**/libs.versions.toml', recursive=True):
-              with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-                  txt = f.read()
-              orig = txt
-              txt = re.sub(r'(agp\s*=\s*")[^"]+(")', r'\g<1>8.7.3\g<2>', txt)
-              txt = re.sub(r'(kotlin\s*=\s*")[^"]+(")', r'\g<1>2.0.21\g<2>', txt)
-              txt = re.sub(r'(com\.android\.application["\']?\s*version\s*["\']?)[^"\']+', r'\g<1>8.7.3', txt)
-              txt = re.sub(r'(org\.jetbrains\.kotlin\.android["\']?\s*version\s*["\']?)[^"\']+', r'\g<1>2.0.21', txt)
-              if txt != orig:
-                  with open(path, 'w', encoding='utf-8') as f:
-                      f.write(txt)
-                  print('Updated:', path)
-
-          props_path = 'android/gradle.properties'
-          try:
-              with open(props_path, 'r', encoding='utf-8', errors='ignore') as f:
-                  props = f.read()
-          except FileNotFoundError:
-              props = ''
-
-          additions = [
-              'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g',
-              'android.enableR8.fullMode=false'
-          ]
-          for line in additions:
-              key = line.split('=')[0]
-              if key not in props:
-                  props += ('\n' if props and not props.endswith('\n') else '') + line + '\n'
-
-          with open(props_path, 'w', encoding='utf-8') as f:
-              f.write(props)
-          print('Ensured gradle.properties settings')
-          PY
-
       - name: Build debug APK
         working-directory: android
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g"
         run: |
           chmod +x gradlew
-          ./gradlew clean assembleDebug --no-build-cache --stacktrace
+          set +e
+          ./gradlew assembleDebug --console=plain > build.log 2>&1
+          code=$?
+          echo "Gradle exit code: $code (log lines: $(wc -l < build.log))"
+          if [ $code -ne 0 ]; then
+            echo "=== FAILED TASKS ==="
+            grep -n "FAILED" build.log | head -20
+            echo "=== WHAT WENT WRONG ==="
+            grep -n -A15 "What went wrong" build.log | head -80
+            echo "=== LAST 40 LINES ==="
+            tail -40 build.log
+            exit $code
+          fi
 
       - name: List APK files
         run: find android -path '*outputs/apk/debug/*.apk'
@@ -155,3 +122,10 @@
           name: movgoat-apk
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-log
+          path: android/build.log
+          if-no-files-found: ignore
