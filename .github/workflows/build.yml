@@ -103,14 +103,53 @@ jobs:
           chmod +x scripts/fetch-upstream.sh
           ./scripts/fetch-upstream.sh
 
+      - name: Align AGP & Kotlin versions in android build files
+        run: |
+          python - <<'PY'
+          import glob, re
+
+          # Update common AGP / Kotlin version declarations if present
+          for path in glob.glob('android/**/*.gradle*', recursive=True) + glob.glob('android/**/libs.versions.toml', recursive=True):
+              with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                  txt = f.read()
+              orig = txt
+              txt = re.sub(r'(agp\s*=\s*")[^"]+(")', r'\g<1>8.7.3\g<2>', txt)
+              txt = re.sub(r'(kotlin\s*=\s*")[^"]+(")', r'\g<1>2.0.21\g<2>', txt)
+              txt = re.sub(r'(com\.android\.application["\']?\s*version\s*["\']?)[^"\']+', r'\g<1>8.7.3', txt)
+              txt = re.sub(r'(org\.jetbrains\.kotlin\.android["\']?\s*version\s*["\']?)[^"\']+', r'\g<1>2.0.21', txt)
+              if txt != orig:
+                  with open(path, 'w', encoding='utf-8') as f:
+                      f.write(txt)
+                  print('Updated:', path)
+
+          props_path = 'android/gradle.properties'
+          try:
+              with open(props_path, 'r', encoding='utf-8', errors='ignore') as f:
+                  props = f.read()
+          except FileNotFoundError:
+              props = ''
+
+          additions = [
+              'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g',
+              'android.enableR8.fullMode=false'
+          ]
+          for line in additions:
+              key = line.split('=')[0]
+              if key not in props:
+                  props += ('\n' if props and not props.endswith('\n') else '') + line + '\n'
+
+          with open(props_path, 'w', encoding='utf-8') as f:
+              f.write(props)
+          print('Ensured gradle.properties settings')
+          PY
+
       - name: Build debug APK
         working-directory: android
         env:
-          _JAVA_OPTIONS: "-Dcom.android.tools.r8.disableKotlinMetadata=true"
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx2g"
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g"
         run: |
           chmod +x gradlew
-          ./gradlew clean assembleDebug --no-build-cache --rerun-tasks --stacktrace
+          ./gradlew clean assembleDebug --no-build-cache --stacktrace
 
       - name: List APK files
         run: find android -path '*outputs/apk/debug/*.apk'
